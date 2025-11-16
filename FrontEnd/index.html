@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>R&B Laundry Services - Layanan Laundry Profesional</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    #orderStatus { font-size: 20px; margin-bottom: 10px; font-weight: 600; color: #333; }
+    #progressContainer { width: 100%; background: #ddd; border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+    #progressBar { width: 0%; height: 20px; background: #4caf50; transition: width 0.5s; }
+    #countdown { font-size: 18px; color: #666; font-weight: 500; }
+    #localTrackingTitle { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <!-- Splash Screen -->
+  <div id="splashScreen" class="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">🧺</div>
+      <h1 class="splash-title">R&B Laundry Services</h1>
+      <div class="splash-loader">
+        <div class="loader-dot"></div>
+        <div class="loader-dot"></div>
+        <div class="loader-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="logo-icon">🧺</div>
+          <h1 class="logo-text">R&B Laundry Services</h1>
+        </div>
+        <nav class="nav-menu">
+          <a href="#home" class="nav-link">Home</a>
+          <a href="#layanan" class="nav-link">Layanan</a>
+          <a href="#harga" class="nav-link">Harga</a>
+          <a href="#chatbot" class="nav-link">Chatbot</a>
+          <a href="#userDashboard" class="nav-link" id="navUserDashboard" style="display: none;">Pesanan Saya</a>
+          <a href="#adminDashboard" class="nav-link" id="navAdminDashboard" style="display: none;">Panel Admin</a>
+          <a href="#pesan" class="nav-link cta-nav">Pesan</a>
+          <a href="#lokasi" class="nav-link">Lokasi</a>
+          </div>
+        </nav>
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="home" class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h2 class="hero-title">Layanan Laundry Cepat, Bersih, dan Profesional</h2>
+          <p class="hero-subtitle">Chatbot Siap Membantu 24 Jam</p>
+          <p class="hero-description">Kami menyediakan layanan laundry berkualitas tinggi dengan berbagai pilihan paket sesuai kebutuhan Anda. Dari layanan reguler hingga kilat, semua tersedia!</p>
+          <!-- Chatbot Section -->
+  <section id="chatbot" class="chatbot-section">
+    <div class="container">
+      <div class="section-header fade-in">
+        <h2 class="section-title">Chatbot Layanan</h2>
+        <p class="section-subtitle">Tanyakan tentang layanan, harga, atau waktu pengerjaan laundry</p>
+      </div>
+      <div class="chatbot-card fade-in">
+        <div class="chatbot-header">
+          <div class="chatbot-header-content">
+            <div class="chatbot-avatar">🤖</div>
+            <div>
+              <h3 class="chatbot-title">Laundry Assistant</h3>
+              <p class="chatbot-status">Online • Siap membantu</p>
+            </div>
+          </div>
+        </div>
+        <div id="chatBox" class="chatbox">
+          <div class="chat-message bot-message">
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+              <p>Halo! Selamat datang di R&B Laundry Services. Saya siap membantu menjawab pertanyaan Anda tentang layanan, harga, atau waktu pengerjaan. Ada yang bisa saya bantu?</p>
+            </div>
+          </div>
+        </div>
+        <form id="chatForm" class="chatbot-form">
+          <input id="userInput" type="text" class="chatbot-input" placeholder="Tulis pesan Anda di sini..." autocomplete="off" />
+          <button type="submit" class="chatbot-send-btn">
+            <span>Kirim</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- User Dashboard -->
+  <section id="userDashboard" class="dashboard-section" style="display: none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Dashboard Pengguna</h2>
+        <p class="section-subtitle">Pantau pesanan dan keluhan Anda</p>
+      </div>
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Pesanan Saya</h3>
+            <button class="btn-outline" id="refreshUserOrders">Segarkan</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="userOrdersTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Layanan</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Tindakan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" class="empty-state">Belum ada pesanan</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Keluhan Saya</h3>
+            <button class="btn-outline" id="refreshUserComplaints">Segarkan</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="userComplaintsTable">
+              <thead>
+                <tr>
+                  <th>Tiket</th>
+                  <th>Kategori</th>
+                  <th>Status</th>
+                  <th>Balasan Admin</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="4" class="empty-state">Belum ada keluhan</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin Dashboard -->
+  <section id="adminDashboard" class="dashboard-section" style="display: none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Panel Admin</h2>
+        <p class="section-subtitle">Kelola pesanan dan keluhan pelanggan</p>
+      </div>
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Manajemen Pesanan</h3>
+            <button class="btn-outline" id="refreshAdminOrders">Segarkan</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="adminOrdersTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Pengguna</th>
+                  <th>Layanan</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Ubah Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="6" class="empty-state">Belum ada pesanan</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Keluhan Pelanggan</h3>
+            <button class="btn-outline" id="refreshAdminComplaints">Segarkan</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="adminComplaintsTable">
+              <thead>
+                <tr>
+                  <th>Tiket</th>
+                  <th>Pesanan</th>
+                  <th>Kategori</th>
+                  <th>Status</th>
+                  <th>Balasan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" class="empty-state">Belum ada keluhan</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+          <a href="#pesan" class="btn-primary">Pesan Sekarang</a>
+        </div>
+        <div class="hero-illustration">
+          <div class="illustration-container">
+            <div class="washing-machine">🧺</div>
+            <div class="bubbles">
+              <span class="bubble bubble-1">🫧</span>
+              <span class="bubble bubble-2">🫧</span>
+              <span class="bubble bubble-3">🫧</span>
+            </div>
+            <div class="clothes">
+              <span class="cloth cloth-1">👕</span>
+              <span class="cloth cloth-2">👔</span>
+              <span class="cloth cloth-3">👗</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Price List Section -->
+  <section id="harga" class="price-section">
+    <div class="container">
+      <div class="section-header fade-in">
+        <h2 class="section-title">Daftar Harga Layanan</h2>
+        <p class="section-subtitle">Pilih paket yang sesuai dengan kebutuhan Anda</p>
+      </div>
+      <div class="price-grid">
+        <!-- Reguler 3 Hari -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">⏰</div>
+            <h3 class="price-card-title">Reguler 3 Hari</h3>
+            <p class="price-card-subtitle">Pembelian Ter atas</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Lipat</span>
+              <span class="price-value">Rp5.000/kg</span>
+            </div>
+            <div class="price-item">
+              <span class="price-label">Setrika</span>
+              <span class="price-value">Rp7.000/kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Express 1 Hari -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">⚡</div>
+            <h3 class="price-card-title">Express 1 Hari</h3>
+            <p class="price-card-subtitle">Selesai dalam 24 jam</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Lipat</span>
+              <span class="price-value">Rp9.000/kg</span>
+            </div>
+            <div class="price-item">
+              <span class="price-label">Setrika</span>
+              <span class="price-value">Rp13.000/kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kilat 6 Jam -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🚀</div>
+            <h3 class="price-card-title">Kilat 6 Jam</h3>
+            <p class="price-card-subtitle">Selesai dalam 6 jam</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Lipat</span>
+              <span class="price-value">Rp13.000/kg</span>
+            </div>
+            <div class="price-item">
+              <span class="price-label">Setrika</span>
+              <span class="price-value">Rp18.000/kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bed Cover Reguler -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🛏️</div>
+            <h3 class="price-card-title">Bed Cover (Reguler)</h3>
+            <p class="price-card-subtitle">Cuci & Setrika</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Kecil-Sedang</span>
+              <span class="price-value">Rp30.000/pcs</span>
+            </div>
+            <div class="price-item">
+              <span class="price-label">Besar</span>
+              <span class="price-value">Rp40.000/pcs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bed Cover Express -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🛏️⚡</div>
+            <h3 class="price-card-title">Bed Cover (Express)</h3>
+            <p class="price-card-subtitle">Selesai 1 hari</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Kecil - Besar</span>
+              <span class="price-value">Rp55.000/pcs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sprei Reguler -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🛋️</div>
+            <h3 class="price-card-title">Sprei (Reguler)</h3>
+            <p class="price-card-subtitle">Ukuran 120-160</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Per pcs</span>
+              <span class="price-value">Rp12.000/pcs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sprei Express -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🛋️⚡</div>
+            <h3 class="price-card-title">Sprei (Express)</h3>
+            <p class="price-card-subtitle">Ukuran 120-160</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Per pcs</span>
+              <span class="price-value">Rp18.000/pcs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sprei Kilat -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🛋️🚀</div>
+            <h3 class="price-card-title">Sprei (Kilat)</h3>
+            <p class="price-card-subtitle">Ukuran 120-160</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Per pcs</span>
+              <span class="price-value">Rp25.000/pcs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Baby Laundry -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">👶</div>
+            <h3 class="price-card-title">Baby Laundry</h3>
+            <p class="price-card-subtitle">(Sleek Baby & Dettol)</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Per kg</span>
+              <span class="price-value">Rp20.000/kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cuci Stroller -->
+        <div class="price-card fade-in">
+          <div class="price-card-header">
+            <div class="price-icon">🛒</div>
+            <h3 class="price-card-title">Cuci Baby Stroller</h3>
+            <p class="price-card-subtitle">Pengerjaan 4-5 Hari</p>
+          </div>
+          <div class="price-card-body">
+            <div class="price-item">
+              <span class="price-label">Per stroller</span>
+              <span class="price-value">Rp150.000/stroller</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Order Form Section -->
+  <section id="pesan" class="order-section">
+    <div class="container">
+      <div class="section-header fade-in">
+        <h2 class="section-title">Buat Pesanan Baru</h2>
+        <p class="section-subtitle">Isi form di bawah ini untuk memesan layanan laundry</p>
+      </div>
+      <div class="order-card fade-in">
+        <form id="orderForm" class="order-form">
+          <div class="form-group">
+            <label for="nama" class="form-label">Nama Pelanggan</label>
+            <input type="text" id="nama" class="form-input" placeholder="Masukkan nama Anda" required />
+          </div>
+
+          <div class="form-group">
+            <label for="phone" class="form-label">Nomor Telepon</label>
+            <input type="tel" id="phone" class="form-input" placeholder="081234567890" />
+          </div>
+
+          <div class="form-group">
+            <label for="layanan" class="form-label">Pilih Layanan</label>
+            <select id="layanan" class="form-input" required>
+      <option value="">-- Pilih Layanan --</option>
+      <optgroup label="Layanan Reguler 3 Hari">
+        <option value="reguler_lipat">Lipat - Rp5.000/kg</option>
+        <option value="reguler_setrika">Setrika - Rp7.000/kg</option>
+      </optgroup>
+      <optgroup label="Layanan Express 1 Hari">
+        <option value="express_lipat">Lipat - Rp9.000/kg</option>
+        <option value="express_setrika">Setrika - Rp13.000/kg</option>
+      </optgroup>
+      <optgroup label="Layanan Kilat 6 Jam">
+        <option value="kilat_lipat">Lipat - Rp13.000/kg</option>
+        <option value="kilat_setrika">Setrika - Rp18.000/kg</option>
+      </optgroup>
+      <optgroup label="Bed Cover (Reguler)">
+        <option value="bedcover_reguler_kecil">Kecil-Sedang - Rp30.000/pcs</option>
+        <option value="bedcover_reguler_besar">Besar - Rp40.000/pcs</option>
+      </optgroup>
+      <optgroup label="Bed Cover (Express)">
+        <option value="bedcover_express">Kecil - Besar - Rp55.000/pcs</option>
+      </optgroup>
+      <optgroup label="Sprei (Reguler)">
+        <option value="sprei_reguler">Ukuran 120 - 160 - Rp12.000/pcs</option>
+      </optgroup>
+      <optgroup label="Sprei (Express)">
+        <option value="sprei_express">Ukuran 120 - 160 - Rp18.000/pcs</option>
+      </optgroup>
+      <optgroup label="Sprei (Kilat)">
+        <option value="sprei_kilat">Ukuran 120 - 160 - Rp25.000/pcs</option>
+      </optgroup>
+      <optgroup label="Baby Laundry ">
+        <option value="baby_laundry">Rp20.000/kg (by Sleek Baby & Dettol)</option>
+      </optgroup>
+      <optgroup label="Cuci Baby Stroller">
+        <option value="baby_stroller">Rp150.000/stroller (Pengerjaan 4-5 Hari)</option>
+      </optgroup>
+    </select>
+          </div>
+
+          <div class="form-row">
+           
+              <div class="weight-display">
+                <input type="number" id="berat" class="form-input" min="1" max="20" value="3" placeholder="contoh: 3" />
+                <span class="weight-unit" id="unitLabel">kg</span>
+              </div>
+            
+          </div>
+
+          <div class="form-group" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <label class="form-label">Total Pembayaran</label>
+            <div style="font-size: 24px; font-weight: 700; color: #4caf50;">
+              <span id="totalHarga">Rp0</span>
+            </div>
+          </div>
+          
+          <div class="form-group" id="estimatedTimeContainer" style="display: none;">
+            <label class="form-label">Estimasi Waktu Selesai</label>
+            <div class="estimated-time">
+              <span id="estimatedTime">-</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="alamat" class="form-label">Alamat Penjemputan</label>
+            <textarea id="alamat" class="form-input form-textarea" rows="3" placeholder="Tulis alamat lengkap di sini..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="catatan" class="form-label">Catatan (Opsional)</label>
+            <textarea id="catatan" class="form-input form-textarea" rows="2" placeholder="Contoh: mohon pisahkan pakaian putih"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary btn-submit">Pesan Sekarang</button>
+  </form>
+      </div>
+    </div>
+  </section>
+
+   <!-- Maps Section -->
+   <section id="lokasi" class="maps-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Lokasi Kami</h2>
+        <p class="section-subtitle">Jl. A. Mononutu, Airmadidi Atas</p>
+      </div>
+      <div class="maps-container">
+        <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.1234567890123!2d124.9859121!3d1.4196117!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32870f003b56aaab%3A0x54dab323569fd3fe!2sRnB+Laundry+Services!5e0!3m2!1sen!2sid!4v1234567890123"
+             width="100%" 
+             height="450" 
+             style="border:0; border-radius: 20px;" 
+             allowfullscreen="" 
+             loading="lazy"
+             referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+
+        <a href="https://maps.app.goo.gl/EGX9FErnvK5viEmZA" 
+           target="_blank" 
+           class="btn-primary maps-btn">
+          📍 Buka di Google Maps
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3 class="footer-title">R&B Laundry Services</h3>
+          <p class="footer-description">Layanan laundry profesional dengan kualitas terbaik untuk kebutuhan Anda.</p>
+        </div>
+        <div class="footer-section">
+          <h4 class="footer-heading">Kontak Kami</h4>
+          <div class="footer-contact">
+            <div class="contact-item">
+              <span class="contact-icon">📱</span>
+              <a href="https://wa.me/082156009199" target="_blank" class="contact-link">082156009199</a>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon">📷</span>
+              <a href="https://instagram.com/rnblaundryservices" target="_blank" class="contact-link">@rnblaundryservices</a>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon">📍</span>
+              <span class="contact-text">Jl. A. Mononutu, Airmadidi Atas</span>
+            </div>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h4 class="footer-heading">Layanan</h4>
+          <ul class="footer-links">
+            <li><a href="#harga">Daftar Harga</a></li>
+            <li><a href="#pesan">Buat Pesanan</a></li>
+            <li><a href="#chatbot">Chatbot</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 R&B Laundry Services. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Payment Modal -->
+  <div id="paymentModal" class="payment-modal">
+    <div class="payment-modal-content">
+      <div class="payment-modal-header">
+        <h2 class="payment-modal-title">Pilih Metode Pembayaran</h2>
+        <button class="payment-modal-close" id="closePaymentModal">&times;</button>
+      </div>
+      <div class="payment-summary">
+        <div class="summary-item">
+          <span>Total Pembayaran</span>
+          <span class="summary-total" id="paymentTotal">Rp0</span>
+        </div>
+      </div>
+      <div class="payment-methods">
+        <div class="payment-method-card" data-method="qris">
+          <div class="method-icon">📱</div>
+          <h3>QRIS</h3>
+          <p>Scan QR Code</p>
+        </div>
+        <div class="payment-method-card" data-method="va">
+          <div class="method-icon">🏦</div>
+          <h3>Virtual Account</h3>
+          <p>Transfer Bank</p>
+        </div>
+      </div>
+
+      <!-- QRIS Payment Content -->
+      <div id="qrisContent" class="payment-content" style="display: none;">
+        <div class="payment-info-card">
+          <h3>Pembayaran QRIS</h3>
+          <div class="qris-container">
+            <div class="qris-code">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=LAUNDRY-FIEKEN-PAYMENT" alt="QR Code" id="qrisImage">
+            </div>
+            <div class="qris-info">
+              <div class="info-row">
+                <span>Merchant:</span>
+                <strong>Laundry Fieken</strong>
+              </div>
+              <div class="info-row">
+                <span>Nominal:</span>
+                <strong class="qris-amount" id="qrisAmount">Rp0</strong>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary btn-confirm-payment" data-method="qris">Saya sudah bayar</button>
+        </div>
+      </div>
+
+      <!-- Virtual Account Payment Content -->
+      <div id="vaContent" class="payment-content" style="display: none;">
+        <div class="payment-info-card">
+          <h3>Pilih Bank</h3>
+          <div class="bank-list" id="bankList">
+            <!-- Banks will be populated by JavaScript -->
+          </div>
+          <div id="vaDetails" class="va-details" style="display: none;">
+            <div class="va-info-card">
+              <h4>Virtual Account</h4>
+              <div class="va-number-container">
+                <span class="va-label">Nomor VA:</span>
+                <span class="va-number" id="vaNumber">-</span>
+                <button class="btn-copy" id="copyVABtn">📋</button>
+              </div>
+              <div class="info-row">
+                <span>Nama Pemilik:</span>
+                <strong>Laundry Fieken</strong>
+              </div>
+              <div class="info-row">
+                <span>Nominal:</span>
+                <strong class="va-amount" id="vaAmount">Rp0</strong>
+              </div>
+              <p class="va-note">Transfer sesuai nominal di atas. Pembayaran akan terverifikasi otomatis.</p>
+              <button class="btn-primary btn-confirm-payment" data-method="va">Saya sudah bayar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tracking Animation (shown after payment confirmed) -->
+      <div id="trackingAnimationContainer" class="payment-content" style="display: none; padding: 2rem 1rem;">
+        <div style="text-align: center;">
+          <h3 style="font-size: 24px; font-weight: 700; color: #333; margin-bottom: 20px;">Tracking Pesanan Laundry</h3>
+          <div id="orderStatus" style="font-size: 20px; margin-bottom: 15px; font-weight: 600; color: #333;">Status: Menunggu...</div>
+          <div id="progressContainer" style="width: 100%; background: #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 15px; height: 24px;">
+            <div id="progressBar" style="width: 0%; height: 100%; background: #4caf50; transition: width 0.5s;"></div>
+          </div>
+          <div id="countdown" style="font-size: 18px; color: #666; font-weight: 500;">Waktu tersisa: -</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="success-modal">
+    <div class="success-modal-content">
+      <div class="success-icon">✔️</div>
+      <h2>Pembayaran Berhasil!</h2>
+      <p id="successOrderId">Pesanan kamu sedang diproses.</p>
+      <div style="margin: 1rem 0;">
+        <button class="btn-primary" id="complaintBtn" style="width: 100%; padding: 12px; border-radius: 25px;">Saya Ingin Complaint</button>
+       
+
+
+        <div id="localTracking" style="display:none; margin-top:1.5rem; padding: 1rem; background:#f5f5f5; border-radius:8px;">
+          <h3 id="localTrackingTitle">Tracking Pesanan Laundry</h3>
+          <div id="orderStatus">Status: Menunggu...</div>
+          <div id="progressContainer">
+            <div id="progressBar"></div>
+          </div>
+          <div id="countdown"></div>
+        </div>
+      </div>
+      <button class="btn-outline" id="closeSuccessModal">OK</button>
+    </div>
+  </div>
+
+  <!-- Tracking Modal -->
+  <div id="trackingModal" class="tracking-modal">
+    <div class="tracking-modal-content">
+      <div class="tracking-modal-header">
+        <h2>Tracking Pesanan</h2>
+        <button class="tracking-close" id="closeTrackingModal">&times;</button>
+      </div>
+      <div id="trackingContent">
+        <div class="tracking-order-id" id="trackingOrderId"></div>
+        <div class="tracking-progress-container">
+          <div class="tracking-steps" id="trackingSteps"></div>
+        </div>
+        <div class="tracking-status" id="trackingStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="reviewModal" class="review-modal">
+    <div class="review-modal-content">
+      <div class="review-modal-header">
+        <h2>Berikan Review</h2>
+        <button class="review-close" id="closeReviewModal">&times;</button>
+      </div>
+      <form id="reviewForm">
+        <input type="hidden" id="reviewOrderId">
+        <div class="form-group">
+          <label>Rating (1-5 bintang)</label>
+          <div class="rating-stars" id="ratingStars">
+            <span class="star" data-rating="1">⭐</span>
+            <span class="star" data-rating="2">⭐</span>
+            <span class="star" data-rating="3">⭐</span>
+            <span class="star" data-rating="4">⭐</span>
+            <span class="star" data-rating="5">⭐</span>
+          </div>
+          <input type="hidden" id="reviewRating" value="5">
+        </div>
+        <div class="form-group">
+          <label>Komentar / Saran</label>
+          <textarea id="reviewComment" rows="4" placeholder="Bagaimana pengalaman Anda dengan layanan laundry ini?"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Upload Foto (Opsional)</label>
+          <input type="file" id="reviewPhoto" accept="image/*">
+        </div>
+        <div class="review-buttons">
+          <button type="button" class="btn-outline" id="submitComplaintBtn">Laporkan Masalah</button>
+          <button type="submit" class="btn-primary">Kirim Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- History Page -->
+  <section id="history" class="history-section" style="display: none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">History Pesanan</h2>
+      </div>
+      <div class="history-tabs">
+        <button class="history-tab active" data-status="all">Semua</button>
+        <button class="history-tab" data-status="active">Berjalan</button>
+        <button class="history-tab" data-status="completed">Selesai</button>
+      </div>
+      <div id="historyList" class="history-list">
+        <!-- History items will be populated by JavaScript -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Tracking Page -->
+  <section id="tracking" class="tracking-section" style="display: none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Tracking Pesanan</h2>
+        <p class="section-subtitle">Pantau status pesanan Anda secara real-time</p>
+      </div>
+      <div class="tracking-list-container">
+        <div id="trackingOrdersList" class="tracking-orders-list">
+          <!-- Tracking orders will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Complaints Page -->
+  <section id="complaints" class="complaints-section" style="display: none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Keluhan & Pengaduan</h2>
+      </div>
+      <div class="complaints-container">
+        <div class="complaint-form-card">
+          <h3>Kirim Keluhan</h3>
+          <form id="complaintForm">
+            <div class="form-group">
+              <label>Pesanan Selesai</label>
+              <select id="complaintOrderId" required>
+                <option value="">Pilih pesanan selesai</option>
+              </select>
+              <small class="form-hint">Keluhan hanya dapat dibuat setelah status pesanan selesai.</small>
+            </div>
+            <div class="form-group">
+              <label>Kategori</label>
+              <select id="complaintCategory" required>
+                <option value="">Pilih Kategori</option>
+                <option value="Barang hilang">Barang hilang</option>
+                <option value="Rusak">Barang rusak</option>
+                <option value="Warna luntur">Warna luntur</option>
+                <option value="Kotor">Masih kotor</option>
+                <option value="Salah layanan">Salah layanan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Deskripsi Keluhan</label>
+              <textarea id="complaintDescription" rows="4" required placeholder="Jelaskan keluhan Anda secara detail..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Rating Pengalaman</label>
+              <select id="complaintRating" required>
+                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                <option value="4">⭐⭐⭐⭐ (4)</option>
+                <option value="3">⭐⭐⭐ (3)</option>
+                <option value="2">⭐⭐ (2)</option>
+                <option value="1">⭐ (1)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Upload Foto Bukti</label>
+              <input type="file" id="complaintPhoto" accept="image/*">
+            </div>
+            <button type="submit" class="btn-primary">Kirim Keluhan</button>
+          </form>
+        </div>
+        <div class="complaints-list-card">
+          <h3>Keluhan Saya</h3>
+          <div id="complaintsList" class="complaints-list">
+            <!-- Complaints will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="role-auth.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

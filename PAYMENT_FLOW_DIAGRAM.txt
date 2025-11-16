@@ -1,0 +1,234 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        💳 PAYMENT SYSTEM FLOW DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            USER FILLS ORDER FORM                             │
+│                    (nama, layanan, berat, alamat, catatan)                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          USER CLICKS "PESAN" BUTTON                          │
+│                    (orderForm.addEventListener('submit'))                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    window.currentOrder OBJECT CREATED                        │
+│                   WITH ALL ORDER DATA + calculateTotal()                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        showPaymentModal(total) CALLED                        │
+│                  ✅ setupPaymentMethods() initialized                        │
+│                  ✅ Confirm buttons get event listeners                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PAYMENT MODAL DISPLAYS WITH 3 METHODS                    │
+│                                                                              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│  │  💵 CASH     │    │  📱 QRIS     │    │  🏦 VA       │                  │
+│  │ Bayar saat   │    │ Scan QR Code │    │ Transfer Bank│                  │
+│  │ penjemputan  │    │              │    │              │                  │
+│  └──────────────┘    └──────────────┘    └──────────────┘                  │
+│                                                                              │
+│              (All clickable - event listeners attached)                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+        ┌─────────────────────────────┼─────────────────────────────┐
+        │                             │                             │
+        ▼                             ▼                             ▼
+    CASH SELECTED             QRIS SELECTED                VA SELECTED
+        │                             │                             │
+        ├─ selectPaymentMethod()      ├─ selectPaymentMethod()      ├─ selectPaymentMethod()
+        │  ('cash')                   │  ('qris')                   │  ('va')
+        │                             │                             │
+        ▼                             ▼                             ▼
+   CASH CONTENT               QRIS CONTENT                VA CONTENT
+   Shows:                     Shows:                       Shows:
+   - Info text                - QR Code                    - Bank list:
+   - Confirm btn              - Amount: Rp XX,XXX            • BCA (1234567)
+                              - Confirm btn                  • Mandiri (7890123)
+                                                             • BRI (4567890)
+                                                             • BNI (2345678)
+                                                             - Select bank btn
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         IF VA METHOD SELECTED:                              │
+│                                                                              │
+│  populateBankList() CALLED                                                  │
+│  ↓                                                                           │
+│  Bank options displayed with event listeners                                │
+│  ↓                                                                           │
+│  User clicks bank (e.g., BCA)                                               │
+│  ↓                                                                           │
+│  selectBank('bca') CALLED                                                   │
+│  ↓                                                                           │
+│  VA Number Generated: 1234567 + random(000000-999999)                      │
+│  ↓                                                                           │
+│  window.currentOrder.vaNumber = "1234567XXXXXX"                             │
+│  window.currentOrder.bankName = "BCA"                                       │
+│  ↓                                                                           │
+│  VA Details Section Shows:                                                  │
+│  - Nomor VA: 1234567XXXXXX  [📋 Copy Button]                               │
+│  - Nama: Laundry Fieken                                                     │
+│  - Amount: Rp XX,XXX                                                        │
+│  - Confirm btn                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      USER CLICKS CONFIRM BUTTON                             │
+│                                                                              │
+│  .btn-confirm-payment (data-method="cash|qris|va")                          │
+│  ↓                                                                           │
+│  processPayment(method) CALLED                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        PAYMENT VALIDATION                                   │
+│                                                                              │
+│  IF method === 'va' AND window.currentOrder.vaNumber === null               │
+│      ↓                                                                       │
+│      ❌ Alert: "Silakan pilih bank terlebih dahulu."                        │
+│      RETURN (stop process)                                                  │
+│  ELSE                                                                        │
+│      ↓                                                                       │
+│      ✅ Continue to build payload                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         BUILD PAYLOAD OBJECT                                │
+│                                                                              │
+│  payload = {                                                                │
+│    userId: window.currentOrder.userId || null,                             │
+│    nama: String(...),                                                       │
+│    layanan: String(...),                                                    │
+│    jumlah: float,                                                           │
+│    berat: float,                                                            │
+│    alamat: String(...),                                                     │
+│    catatan: String(...),                                                    │
+│    metodePembayaran: "cash" | "qris" | "va",  ← METHOD STORED HERE         │
+│    statusPembayaran: "Belum Dibayar (Cash)" | "Berhasil" |                 │
+│                      "Menunggu Verifikasi",                                 │
+│    total: float,                                                            │
+│    [IF VA] vaNumber: "1234567XXXXXX",          ← VA NUMBER STORED HERE     │
+│    [IF VA] bankName: "BCA|Mandiri|BRI|BNI"    ← BANK NAME STORED HERE      │
+│  }                                                                           │
+│                                                                              │
+│  console.log('💳 Mengirim data pembayaran ke backend:', payload)           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    POST REQUEST TO BACKEND                                  │
+│                                                                              │
+│  URL: http://127.0.0.1:8000/order                                           │
+│  METHOD: POST                                                               │
+│  HEADERS: { "Content-Type": "application/json" }                            │
+│  BODY: payload (JSON stringified)                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    BACKEND (app.py) RECEIVES REQUEST                        │
+│                                                                              │
+│  @app.post("/order") async def create_order()                              │
+│  ↓                                                                           │
+│  Parse JSON body manually                                                   │
+│  ↓                                                                           │
+│  Validate required fields (nama, layanan, metodePembayaran)                 │
+│  ↓                                                                           │
+│  Create order_record with all fields including:                            │
+│    - metodePembayaran                                                       │
+│    - vaNumber (if provided)                                                 │
+│    - bankName (if provided)                                                 │
+│  ↓                                                                           │
+│  data["orders"].append(order_record)                                        │
+│  save_db(data)  ← SAVED TO db.json                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      DB.JSON FILE UPDATED                                   │
+│                                                                              │
+│  BackEnd/db.json:                                                           │
+│  {                                                                           │
+│    "orders": [                                                              │
+│      {                                                                       │
+│        "id": "ORD-ABC123",                                                  │
+│        "userName": "John Doe",                                              │
+│        "metodePembayaran": "va",          ← ✅ STORED                       │
+│        "statusPembayaran": "Menunggu Verifikasi",                          │
+│        "vaNumber": "1234567456789",       ← ✅ STORED (if VA)              │
+│        "bankName": "BCA",                 ← ✅ STORED (if VA)              │
+│        "total": 12500,                                                      │
+│        ...other fields...                                                   │
+│      }                                                                       │
+│    ]                                                                         │
+│  }                                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   RESPONSE RECEIVED IN FRONTEND                             │
+│                                                                              │
+│  response = await fetch()                                                   │
+│  IF response.ok                                                             │
+│    ↓                                                                         │
+│    result = await response.json()                                           │
+│    IF result.success                                                        │
+│        ↓                                                                     │
+│        console.log('✅ Pesanan berhasil dibuat...')                         │
+│        ↓                                                                     │
+│        Reset form: orderForm.reset()                                        │
+│        Reset order: window.currentOrder = null                              │
+│        Close modal: closePaymentModal()                                     │
+│        ↓                                                                     │
+│        Show success modal with order ID                                     │
+│        ↓                                                                     │
+│        Refresh dashboards if available                                      │
+│    ELSE                                                                      │
+│        Error: result.message                                                │
+│  ELSE                                                                        │
+│    Error: HTTP ${response.status}                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SUCCESS MODAL DISPLAYS                               │
+│                                                                              │
+│  ┌─────────────────────────────────────┐                                   │
+│  │   ✅ PESANAN BERHASIL DIBUAT       │                                   │
+│  │                                     │                                   │
+│  │  Nomor Pesanan: ORD-ABC123         │                                   │
+│  │                                     │                                   │
+│  │  Metode Pembayaran: VA             │ ← (or CASH/QRIS)                  │
+│  │  Bank: BCA                         │ ← (if VA)                          │
+│  │  Nomor VA: 1234567456789           │ ← (if VA)                          │
+│  │                                     │                                   │
+│  │  [Lihat Pesanan Saya]              │                                   │
+│  └─────────────────────────────────────┘                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                              ✅ FLOW COMPLETE
+═══════════════════════════════════════════════════════════════════════════════
+
+KEY FEATURES IMPLEMENTED:
+✅ 3 clickable payment methods
+✅ Dynamic content display per method
+✅ VA bank selection with list
+✅ Auto-generate VA number (prefix + 6 random digits)
+✅ Store metodePembayaran in db.json
+✅ Store vaNumber in db.json (if VA)
+✅ Store bankName in db.json (if VA)
+✅ Copy VA button functionality
+✅ Proper validation (must select bank for VA)
+✅ Error handling & user feedback
+✅ Success modal with order details
+
+═══════════════════════════════════════════════════════════════════════════════
