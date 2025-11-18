@@ -2,7 +2,7 @@
 // AUTHENTICATION SYSTEM
 // ============================================
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'http://127.0.0.1:8080';
 const ORDER_STATUS_FLOW = ['Menunggu Diproses', 'Diproses', 'Dikeringkan', 'Disetrika', 'Selesai', 'Diantar', 'Selesai & diterima'];
 const COMPLAINT_STATUSES = ['Menunggu', 'Diproses', 'Selesai'];
 let latestUserOrders = [];

@@ -3,12 +3,11 @@ import json
 import os
 from pathlib import Path
 import uuid
-from typing import Optional, Union, Any, Dict
+from typing import Optional
 
-import bcrypt
-from fastapi import FastAPI, Request, HTTPException, Body
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel
 
 from rag_pipeline import RAGPipeline
 
@@ -25,14 +24,8 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "db.json"
-DEFAULT_DB = {"users": [], "orders": [], "complaints": []}
-DEFAULT_ADMIN = {
-    "nama": "Admin Laundry",
-    "email": "admin@laundry.com",
-    "password": "Admin123!",
-    "phone": "0800000000",
-    "alamat": "Laundry HQ",
-}
+DEFAULT_DB = {"orders": [], "complaints": []}
+
 ALLOWED_ORDER_STATUSES = [
     "Menunggu Diproses",
     "Diproses",
@@ -42,7 +35,6 @@ ALLOWED_ORDER_STATUSES = [
     "Diantar",
     "Selesai & diterima",
 ]
-ALLOWED_COMPLAINT_STATUSES = ["Menunggu", "Diproses", "Selesai"]
 
 
 # --- INISIASI RAG SEKALI SAJA ---
@@ -68,17 +60,6 @@ PRICE_MAP = {
 
 
 # ====================== HELPERS ======================
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
-
-def verify_password(password: str, hashed: str) -> bool:
-    try:
-        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
-    except ValueError:
-        return False
-
-
 def ensure_db_file():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not DB_PATH.exists():
@@ -93,31 +74,12 @@ def load_db():
 
     # Migrasi dari format lama (list)
     if isinstance(data, list):
-        data = {"users": [], "orders": data, "complaints": []}
+        data = {"orders": data,}
 
     changed = False
 
     for key in DEFAULT_DB.keys():
         data.setdefault(key, [])
-
-    # Seed default admin if missing
-    if not any(u.get("role") == "admin" for u in data["users"]):
-        admin_user = {
-            "id": generate_id("USR"),
-            "nama": DEFAULT_ADMIN["nama"],
-            "email": DEFAULT_ADMIN["email"],
-            "phone": DEFAULT_ADMIN["phone"],
-            "alamat": DEFAULT_ADMIN["alamat"],
-            "role": "admin",
-            "password": hash_password(DEFAULT_ADMIN["password"]),
-            "avatar": "",
-            "created_at": datetime.utcnow().isoformat(),
-        }
-        data["users"].append(admin_user)
-        changed = True
-
-    if changed:
-        save_db(data)
 
     return data
 
@@ -132,32 +94,8 @@ def generate_id(prefix: str) -> str:
     suffix = uuid.uuid4().hex[:4].upper()
     return f"{prefix}-{stamp}-{suffix}"
 
-
 # ====================== SCHEMAS ======================
-class RegisterRequest(BaseModel):
-    nama: str
-    email: EmailStr
-    phone: Optional[str] = ""
-    password: str
-    alamat: Optional[str] = ""
-    role: str = "user"
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class ProfileUpdateRequest(BaseModel):
-    id: str
-    nama: str
-    email: EmailStr
-    phone: Optional[str] = ""
-    alamat: Optional[str] = ""
-
-
 class OrderCreateRequest(BaseModel):
-    userId: Optional[str] = None
     nama: str
     layanan: str
     jumlah: float
@@ -166,7 +104,6 @@ class OrderCreateRequest(BaseModel):
     metodePembayaran: str
     statusPembayaran: str
     total: float
-    id: Optional[str] = None
     vaNumber: Optional[str] = None
     bankName: Optional[str] = None
     phone: Optional[str] = ""
@@ -174,15 +111,6 @@ class OrderCreateRequest(BaseModel):
     model_config = {
         "populate_by_name": True,
     }
-        
-    @model_validator(mode='before')
-    @classmethod
-    def validate_user_id(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            # Ensure userId is None if not provided or if null
-            if 'userId' not in data or data.get('userId') is None:
-                data['userId'] = None
-        return data
 
 
 class OrderStatusUpdate(BaseModel):
@@ -190,85 +118,14 @@ class OrderStatusUpdate(BaseModel):
 
 
 class ComplaintCreateRequest(BaseModel):
-    order_id: str = Field(..., alias="orderId")
-    user_id: Optional[str] = Field(None, alias="userId")
+    orderId: str
     kategori: str
     deskripsi: str
-    foto: Optional[str] = None
-    rating: Optional[int] = Field(default=None, ge=1, le=5)
-    is_review: Optional[bool] = False  # True untuk review positif, False untuk complaint
-
-    class Config:
-        populate_by_name = True
-
-
-class ComplaintUpdateRequest(BaseModel):
-    status: Optional[str] = None
-    balasanAdmin: Optional[str] = None
-
-
-# ====================== AUTH ======================
-@app.post("/auth/register")
-async def register_user(payload: RegisterRequest):
-    data = load_db()
-    if any(u["email"].lower() == payload.email.lower() for u in data["users"]):
-        raise HTTPException(status_code=400, detail="Email sudah terdaftar")
-
-    user = {
-        "id": generate_id("USR"),
-        "nama": payload.nama,
-        "email": payload.email.lower(),
-        "phone": payload.phone or "",
-        "alamat": payload.alamat or "",
-        "role": payload.role if payload.role in ["user", "admin"] else "user",
-        "password": hash_password(payload.password),
-        "avatar": "",
-        "created_at": datetime.utcnow().isoformat(),
-    }
-    data["users"].append(user)
-    save_db(data)
-
-    user_copy = user.copy()
-    user_copy.pop("password")
-    return {"success": True, "user": user_copy}
-
-
-@app.post("/auth/login")
-async def login_user(payload: LoginRequest):
-    data = load_db()
-    user = next((u for u in data["users"] if u["email"].lower() == payload.email.lower()), None)
-    if not user or not verify_password(payload.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Email atau password salah")
-
-    user_copy = user.copy()
-    user_copy.pop("password", None)
-    return {"success": True, "user": user_copy}
-
-
-@app.post("/auth/update-profile")
-async def update_profile(payload: ProfileUpdateRequest):
-    data = load_db()
-    user = next((u for u in data["users"] if u["id"] == payload.id), None)
-    if not user:
-        raise HTTPException(status_code=404, detail="User tidak ditemukan")
-
-    user.update(
-        {
-            "nama": payload.nama,
-            "email": payload.email.lower(),
-            "phone": payload.phone or "",
-            "alamat": payload.alamat or "",
-        }
-    )
-    save_db(data)
-
-    user_copy = user.copy()
-    user_copy.pop("password", None)
-    return {"success": True, "user": user_copy}
+    rating: Optional[int] = None
 
 
 # ====================== ORDERS ======================
-@app.api_route("/order", methods=["POST"], response_model=None)
+@app.post("/order")
 async def create_order(request: Request):
     """
     Create order endpoint - accepts any JSON body without strict validation
@@ -283,19 +140,8 @@ async def create_order(request: Request):
         
         data = load_db()
         
-        # Extract userId - can be None, null, empty string, or missing
-        # userId is completely optional - never required
-        user_id = body.get("userId")
-        if user_id is None or user_id == "" or user_id == "null" or user_id == "undefined" or "userId" not in body:
-            user_id = None
-        else:
-            # Validate user if userId is provided and is a valid string
-            if isinstance(user_id, str) and user_id.strip():
-                user = next((u for u in data["users"] if u["id"] == user_id), None)
-                if not user:
-                    raise HTTPException(status_code=404, detail="User tidak ditemukan")
-            else:
-                user_id = None
+        # No authentication system: treat all orders as guest orders
+        user_id = None
         
         # Validate required fields
         if not body.get("nama"):
@@ -352,7 +198,6 @@ async def create_order(request: Request):
 
         order_record = {
             "id": order_id,
-            "userId": user_id,
             "userName": body.get("nama", ""),
             "layanan": layanan_val,
             "jumlah": float(jumlah_val),
@@ -432,93 +277,6 @@ async def update_order_status(order_id: str, payload: OrderStatusUpdate):
     return {"success": True, "order": order}
 
 
-# ====================== COMPLAINTS ======================
-@app.post("/complaints/create")
-async def create_complaint(payload: ComplaintCreateRequest):
-    data = load_db()
-    # Cari order by ID, bisa dengan atau tanpa userId (untuk guest orders)
-    if payload.user_id:
-        order = next((o for o in data["orders"] if o["id"] == payload.order_id and o.get("userId") == payload.user_id), None)
-    else:
-        order = next((o for o in data["orders"] if o["id"] == payload.order_id), None)
-    
-    if not order:
-        raise HTTPException(status_code=404, detail="Pesanan tidak ditemukan")
-
-    # Bisa review/complaint jika status sudah "Selesai" atau "Selesai & diterima"
-    if order.get("status") not in ["Selesai", "Selesai & diterima"]:
-        raise HTTPException(status_code=400, detail="Review/keluhan hanya bisa dibuat untuk pesanan yang sudah selesai")
-
-    ticket_id = generate_id("TKT")
-    complaint = {
-        "ticketId": ticket_id,
-        "orderId": payload.order_id,
-        "userId": payload.user_id,
-        "kategori": payload.kategori,
-        "deskripsi": payload.deskripsi,
-        "foto": payload.foto or "",
-        "rating": payload.rating,
-        "isReview": payload.is_review or False,
-        "tanggal": datetime.utcnow().isoformat(),
-        "status": "Menunggu" if not payload.is_review else "Selesai",
-        "balasanAdmin": "",
-    }
-    data["complaints"].append(complaint)
-    save_db(data)
-    return {"success": True, "complaint": complaint}
-
-
-@app.get("/complaints")
-async def list_complaints(userId: Optional[str] = None):
-    data = load_db()
-    complaints = data["complaints"]
-    if userId:
-        complaints = [c for c in complaints if c.get("userId") == userId]
-    return complaints
-
-
-@app.get("/complaints/user/{user_id}")
-async def list_user_complaints(user_id: str):
-    return await list_complaints(userId=user_id)
-
-
-@app.get("/orders/tracking/{order_id}")
-async def track_order(order_id: str):
-    """Endpoint untuk tracking pesanan (bisa diakses tanpa login untuk guest orders)"""
-    data = load_db()
-    order = next((o for o in data["orders"] if o["id"] == order_id), None)
-    if not order:
-        raise HTTPException(status_code=404, detail="Pesanan tidak ditemukan")
-    
-    # Return minimal info untuk tracking
-    return {
-        "id": order["id"],
-        "status": order.get("status", "Menunggu Diproses"),
-        "tracking_step": order.get("tracking_step", "Menunggu Diproses"),
-        "tanggal": order.get("tanggal"),
-        "layanan": order.get("layanan"),
-    }
-
-
-@app.patch("/complaints/{ticket_id}")
-async def update_complaint(ticket_id: str, payload: ComplaintUpdateRequest):
-    data = load_db()
-    complaint = next((c for c in data["complaints"] if c["ticketId"] == ticket_id), None)
-    if not complaint:
-        raise HTTPException(status_code=404, detail="Keluhan tidak ditemukan")
-
-    if payload.status:
-        if payload.status not in ALLOWED_COMPLAINT_STATUSES:
-            raise HTTPException(status_code=400, detail="Status keluhan tidak valid")
-        complaint["status"] = payload.status
-
-    if payload.balasanAdmin is not None:
-        complaint["balasanAdmin"] = payload.balasanAdmin
-
-    save_db(data)
-    return {"success": True, "complaint": complaint}
-
-
 # ====================== CHATBOT ======================
 @app.post("/chat")
 async def chat(req: Request):
@@ -534,3 +292,57 @@ async def chat(req: Request):
     except Exception as e:
         print("❌ Error pada RAG:", e)
         return {"reply": "Terjadi kesalahan saat memproses pertanyaan Anda."}
+
+
+@app.post("/complaints/create")
+async def create_complaint(
+    orderId: str = Form(...),
+    kategori: str = Form(...),
+    deskripsi: str = Form(...),
+    rating: Optional[int] = Form(None),
+    foto: Optional[UploadFile] = File(None)
+):
+    data = load_db()
+    # find order by id
+    order = next((o for o in data["orders"] if o["id"] == orderId), None)
+    if not order:
+        raise HTTPException(status_code=404, detail="Pesanan tidak ditemukan")
+
+    ticket_id = generate_id("TKT")
+    
+    # Handle file upload
+    foto_filename = ""
+    if foto and foto.filename:
+        try:
+            # Create uploads directory if doesn't exist
+            uploads_dir = BASE_DIR / "uploads"
+            uploads_dir.mkdir(exist_ok=True)
+            
+            # Save file with unique name
+            file_ext = Path(foto.filename).suffix
+            unique_filename = f"{ticket_id}{file_ext}"
+            file_path = uploads_dir / unique_filename
+            
+            contents = await foto.read()
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            
+            foto_filename = unique_filename
+        except Exception as e:
+            print(f"❌ Error saving file: {e}")
+            # Continue even if file upload fails
+    
+    complaint = {
+        "ticketId": ticket_id,
+        "orderId": orderId,
+        "kategori": kategori,
+        "deskripsi": deskripsi,
+        "foto": foto_filename,
+        "rating": rating,
+        "tanggal": datetime.utcnow().isoformat(),
+        "status": "Menunggu",
+        "balasanAdmin": "",
+    }
+    data["complaints"].append(complaint)
+    save_db(data)
+    return {"success": True, "ticketId": ticket_id, "complaint": complaint}
