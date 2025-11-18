@@ -1,6 +1,6 @@
 // Clean, tracking-free frontend script
 
-var API_BASE_URL = (window && window.API_BASE_URL) ? window.API_BASE_URL : 'http://127.0.0.1:8000';
+var API_BASE_URL = (window && window.API_BASE_URL) ? window.API_BASE_URL : 'http://127.0.0.1:8080';
 
 function $(sel) {
   return document.querySelector(sel);
@@ -178,12 +178,8 @@ if (orderForm) {
     var isPerKg = (layanan.indexOf('reguler_') !== -1) || (layanan.indexOf('express_') !== -1) || (layanan.indexOf('kilat_') !== -1);
     var jumlah = isPerKg ? (berat ? parseFloat(berat) : 1) : 1;
 
-    var currentUser = null;
-    try { currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch (e) { currentUser = null; }
-    var userId = (currentUser && currentUser.id) ? String(currentUser.id) : null;
-
     window.currentOrder = {
-      userId: userId,
+      userId: null,
       nama: nama,
       layanan: layanan,
       jumlah: jumlah,
@@ -389,6 +385,99 @@ function closeSuccessModal() {
 var closePay = document.getElementById('closePaymentModal'); if (closePay) closePay.addEventListener('click', closePaymentModal);
 var closeSuc = document.getElementById('closeSuccessModal'); if (closeSuc) closeSuc.addEventListener('click', closeSuccessModal);
 
+// Complaint modal handlers
+var complaintBtn = document.getElementById('complaintBtn');
+var complaintModal = document.getElementById('complaintModal');
+var closeComplaintBtn = document.getElementById('closeComplaintModal');
+if (complaintBtn && complaintModal) {
+  complaintBtn.addEventListener('click', function () {
+    // Parse order id from success modal text or from currentOrder
+    var orderText = (document.getElementById('successOrderId') && document.getElementById('successOrderId').innerText) ? document.getElementById('successOrderId').innerText : '';
+    var match = orderText.match(/([A-Z]{3}-\d{14}-[0-9A-F]{4})/);
+    var orderId = (match && match[1]) ? match[1] : ((window.currentOrder && window.currentOrder.id) ? window.currentOrder.id : '');
+    var orderIdEl = document.getElementById('complaintOrderId');
+    if (orderIdEl) orderIdEl.value = orderId;
+    complaintModal.style.display = 'block';
+  });
+}
+if (closeComplaintBtn && complaintModal) closeComplaintBtn.addEventListener('click', function () { complaintModal.style.display = 'none'; });
+
+// Handle complaint form submission with multipart form-data
+var complaintForm = document.getElementById('complaintForm');
+if (complaintForm) {
+  complaintForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var orderId = (document.getElementById('complaintOrderId') && document.getElementById('complaintOrderId').value) ? document.getElementById('complaintOrderId').value : '';
+    var kategori = (document.getElementById('complaintCategory') && document.getElementById('complaintCategory').value) ? document.getElementById('complaintCategory').value : '';
+    var deskripsi = (document.getElementById('complaintDescription') && document.getElementById('complaintDescription').value) ? document.getElementById('complaintDescription').value.trim() : '';
+    var rating = (document.getElementById('complaintRating') && document.getElementById('complaintRating').value) ? parseInt(document.getElementById('complaintRating').value) : null;
+    var photoInput = document.getElementById('complaintPhoto');
+
+    // Validate required fields
+    if (!orderId || !kategori || !deskripsi) {
+      alert('Silakan isi semua field yang diperlukan.');
+      return;
+    }
+
+    // Create FormData for multipart upload
+    var formData = new FormData();
+    formData.append('orderId', orderId);
+    formData.append('kategori', kategori);
+    formData.append('deskripsi', deskripsi);
+    if (rating) formData.append('rating', rating);
+    if (photoInput && photoInput.files && photoInput.files[0]) {
+      formData.append('foto', photoInput.files[0]);
+    }
+
+    try {
+      var controller = new AbortController();
+      var timeout = setTimeout(function () { controller.abort(); }, 15000);
+      var res = await fetch(API_BASE_URL + '/complaints/create', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        var errText = await res.text();
+        alert('Gagal mengirim keluhan: ' + errText);
+        return;
+      }
+      var json = await res.json();
+      
+      // Display success modal with ticket ID
+      var ticketId = json.ticketId || (json.complaint && json.complaint.ticketId) || 'N/A';
+      var ticketIdElement = document.getElementById('complaintSuccessTicketId');
+      if (ticketIdElement) {
+        ticketIdElement.textContent = ticketId;
+      }
+      
+      // Hide complaint form modal and show success modal
+      var complaintModal = document.getElementById('complaintModal');
+      var complaintSuccessModal = document.getElementById('complaintSuccessModal');
+      if (complaintModal) complaintModal.style.display = 'none';
+      if (complaintSuccessModal) complaintSuccessModal.style.display = 'flex';
+      
+      // Reset form
+      try { complaintForm.reset(); } catch (ex) {}
+    } catch (err) {
+      console.error('Complaint error', err);
+      alert('Gagal mengirim keluhan. Coba lagi.');
+    }
+  });
+}
+
+// Close complaint success modal
+var closeComplaintSuccessBtn = document.getElementById('closeComplaintSuccessModal');
+if (closeComplaintSuccessBtn) {
+  closeComplaintSuccessBtn.addEventListener('click', function () {
+    var complaintSuccessModal = document.getElementById('complaintSuccessModal');
+    var successModal = document.getElementById('successModal');
+    if (complaintSuccessModal) complaintSuccessModal.style.display = 'none';
+    if (successModal) successModal.style.display = 'none';
+  });
+}
+
 // Feedback
 var submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
 if (submitFeedbackBtn) {
@@ -582,7 +671,7 @@ async function submitOrderToBackend() {
     var totalVal = (co.totalAmount !== undefined && co.totalAmount !== null) ? co.totalAmount : (co.total !== undefined ? co.total : 0);
 
     var payload = {
-      userId: (co && co.userId) ? co.userId : null,
+
       nama: String(name || ''),
       phone: String(phone || ''),
       alamat: String(address || ''),

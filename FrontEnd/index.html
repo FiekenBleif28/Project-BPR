@@ -43,11 +43,8 @@
           <a href="#layanan" class="nav-link">Layanan</a>
           <a href="#harga" class="nav-link">Harga</a>
           <a href="#chatbot" class="nav-link">Chatbot</a>
-          <a href="#userDashboard" class="nav-link" id="navUserDashboard" style="display: none;">Pesanan Saya</a>
-          <a href="#adminDashboard" class="nav-link" id="navAdminDashboard" style="display: none;">Panel Admin</a>
           <a href="#pesan" class="nav-link cta-nav">Pesan</a>
           <a href="#lokasi" class="nav-link">Lokasi</a>
-          </div>
         </nav>
         <button class="mobile-menu-toggle" aria-label="Toggle menu">
           <span></span>
@@ -105,66 +102,7 @@
     </div>
   </section>
 
-  <!-- User Dashboard -->
-  <section id="userDashboard" class="dashboard-section" style="display: none;">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Dashboard Pengguna</h2>
-        <p class="section-subtitle">Pantau pesanan dan keluhan Anda</p>
-      </div>
-      <div class="dashboard-grid">
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <h3>Pesanan Saya</h3>
-            <button class="btn-outline" id="refreshUserOrders">Segarkan</button>
-          </div>
-          <div class="table-wrapper">
-            <table class="data-table" id="userOrdersTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Layanan</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Tindakan</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colspan="5" class="empty-state">Belum ada pesanan</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <h3>Keluhan Saya</h3>
-            <button class="btn-outline" id="refreshUserComplaints">Segarkan</button>
-          </div>
-          <div class="table-wrapper">
-            <table class="data-table" id="userComplaintsTable">
-              <thead>
-                <tr>
-                  <th>Tiket</th>
-                  <th>Kategori</th>
-                  <th>Status</th>
-                  <th>Balasan Admin</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colspan="4" class="empty-state">Belum ada keluhan</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Admin Dashboard -->
+  <!-- Maps Section -->  <!-- Admin Dashboard -->
   <section id="adminDashboard" class="dashboard-section" style="display: none;">
     <div class="container">
       <div class="section-header">
@@ -589,7 +527,7 @@
   </footer>
 
   <!-- Payment Modal -->
-  <div id="paymentModal" class="payment-modal">
+  <div  id="paymentModal" class="payment-modal">
     <div class="payment-modal-content">
       <div class="payment-modal-header">
         <h2 class="payment-modal-title">Pilih Metode Pembayaran</h2>
@@ -686,170 +624,79 @@
     <div class="success-modal-content">
       <div class="success-icon">✔️</div>
       <h2>Pembayaran Berhasil!</h2>
-      <p id="successOrderId">Pesanan kamu sedang diproses.</p>
-      <div style="margin: 1rem 0;">
-        <button class="btn-primary" id="complaintBtn" style="width: 100%; padding: 12px; border-radius: 25px;">Saya Ingin Complaint</button>
-       
-
-
-        <div id="localTracking" style="display:none; margin-top:1.5rem; padding: 1rem; background:#f5f5f5; border-radius:8px;">
-          <h3 id="localTrackingTitle">Tracking Pesanan Laundry</h3>
-          <div id="orderStatus">Status: Menunggu...</div>
-          <div id="progressContainer">
-            <div id="progressBar"></div>
-          </div>
-          <div id="countdown"></div>
-        </div>
-      </div>
-      <button class="btn-outline" id="closeSuccessModal">OK</button>
-    </div>
-  </div>
-
-  <!-- Tracking Modal -->
-  <div id="trackingModal" class="tracking-modal">
-    <div class="tracking-modal-content">
-      <div class="tracking-modal-header">
-        <h2>Tracking Pesanan</h2>
-        <button class="tracking-close" id="closeTrackingModal">&times;</button>
-      </div>
-      <div id="trackingContent">
-        <div class="tracking-order-id" id="trackingOrderId"></div>
-        <div class="tracking-progress-container">
-          <div class="tracking-steps" id="trackingSteps"></div>
-        </div>
-        <div class="tracking-status" id="trackingStatus"></div>
+      <p id="successOrderId">Pesanan kamu sedah diproses.</p>
+      <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+        <button class="btn-outline" id="closeSuccessModal">OK</button>
+        <button class="btn-primary" id="complaintBtn">Laporkan Keluhan</button>
       </div>
     </div>
   </div>
 
-  <!-- Review Modal -->
-  <div id="reviewModal" class="review-modal">
-    <div class="review-modal-content">
-      <div class="review-modal-header">
-        <h2>Berikan Review</h2>
-        <button class="review-close" id="closeReviewModal">&times;</button>
-      </div>
-      <form id="reviewForm">
-        <input type="hidden" id="reviewOrderId">
+  <!-- Complaint Modal -->
+  <div id="complaintModal" class="success-modal" style="display:none;">
+    <div class="success-modal-content">
+      <h2>Laporkan Keluhan</h2>
+      <form id="complaintForm">
+        <input type="hidden" id="complaintOrderId" />
         <div class="form-group">
-          <label>Rating (1-5 bintang)</label>
-          <div class="rating-stars" id="ratingStars">
-            <span class="star" data-rating="1">⭐</span>
-            <span class="star" data-rating="2">⭐</span>
-            <span class="star" data-rating="3">⭐</span>
-            <span class="star" data-rating="4">⭐</span>
-            <span class="star" data-rating="5">⭐</span>
-          </div>
-          <input type="hidden" id="reviewRating" value="5">
+          <label>Kategori</label>
+          <select id="complaintCategory" class="form-input" required>
+            <option value="">Pilih kategori</option>
+            <option value="Barang hilang">Barang hilang</option>
+            <option value="Rusak">Barang rusak</option>
+            <option value="Warna luntur">Warna luntur</option>
+            <option value="Kotor">Masih kotor</option>
+            <option value="Salah layanan">Salah layanan</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Komentar / Saran</label>
-          <textarea id="reviewComment" rows="4" placeholder="Bagaimana pengalaman Anda dengan layanan laundry ini?"></textarea>
+          <label>Deskripsi</label>
+          <textarea id="complaintDescription" class="form-input" rows="4" required></textarea>
         </div>
         <div class="form-group">
-          <label>Upload Foto (Opsional)</label>
-          <input type="file" id="reviewPhoto" accept="image/*">
+          <label>Rating</label>
+          <select id="complaintRating" class="form-input">
+            <option value="5">5 - Sangat Baik</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1 - Buruk</option>
+          </select>
         </div>
-        <div class="review-buttons">
-          <button type="button" class="btn-outline" id="submitComplaintBtn">Laporkan Masalah</button>
-          <button type="submit" class="btn-primary">Kirim Review</button>
+        <div class="form-group">
+          <label>Upload Foto (opsional)</label>
+          <input type="file" id="complaintPhoto" accept="image/*" />
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="submit" class="btn-primary">Kirim Keluhan</button>
+          <button type="button" id="closeComplaintModal" class="btn-outline">Batal</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- History Page -->
-  <section id="history" class="history-section" style="display: none;">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">History Pesanan</h2>
-      </div>
-      <div class="history-tabs">
-        <button class="history-tab active" data-status="all">Semua</button>
-        <button class="history-tab" data-status="active">Berjalan</button>
-        <button class="history-tab" data-status="completed">Selesai</button>
-      </div>
-      <div id="historyList" class="history-list">
-        <!-- History items will be populated by JavaScript -->
+  <!-- Complaint Success Modal -->
+  <div id="complaintSuccessModal" class="success-modal" style="display:none;">
+    <div class="success-modal-content">
+      <div style="text-align: center;">
+        <h2 style="color: #4CAF50; margin-bottom: 1.5rem;">✓ Keluhan Terkirim</h2>
+        <p style="font-size: 0.95rem; color: #666; margin-bottom: 1.5rem;">
+          Terima kasih telah melaporkan keluhan. Tim kami akan segera memproses laporan Anda.
+        </p>
+        <div style="background: #f5f5f5; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+          <p style="font-size: 0.85rem; color: #999; margin-bottom: 0.5rem;">Nomor Tiket Keluhan</p>
+          <p id="complaintSuccessTicketId" style="font-size: 1.5rem; font-weight: bold; color: #2196F3; font-family: 'Courier New', monospace; letter-spacing: 1px;">
+            TKT-XXXXXXXX-XXXX
+          </p>
+        </div>
+        <p style="font-size: 0.9rem; color: #666;">Simpan nomor tiket untuk referensi Anda.</p>
+        <button type="button" id="closeComplaintSuccessModal" class="btn-primary" style="margin-top: 1rem; width: 100%;">
+          OK
+        </button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Tracking Page -->
-  <section id="tracking" class="tracking-section" style="display: none;">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Tracking Pesanan</h2>
-        <p class="section-subtitle">Pantau status pesanan Anda secara real-time</p>
-      </div>
-      <div class="tracking-list-container">
-        <div id="trackingOrdersList" class="tracking-orders-list">
-          <!-- Tracking orders will be populated by JavaScript -->
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Complaints Page -->
-  <section id="complaints" class="complaints-section" style="display: none;">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Keluhan & Pengaduan</h2>
-      </div>
-      <div class="complaints-container">
-        <div class="complaint-form-card">
-          <h3>Kirim Keluhan</h3>
-          <form id="complaintForm">
-            <div class="form-group">
-              <label>Pesanan Selesai</label>
-              <select id="complaintOrderId" required>
-                <option value="">Pilih pesanan selesai</option>
-              </select>
-              <small class="form-hint">Keluhan hanya dapat dibuat setelah status pesanan selesai.</small>
-            </div>
-            <div class="form-group">
-              <label>Kategori</label>
-              <select id="complaintCategory" required>
-                <option value="">Pilih Kategori</option>
-                <option value="Barang hilang">Barang hilang</option>
-                <option value="Rusak">Barang rusak</option>
-                <option value="Warna luntur">Warna luntur</option>
-                <option value="Kotor">Masih kotor</option>
-                <option value="Salah layanan">Salah layanan</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Deskripsi Keluhan</label>
-              <textarea id="complaintDescription" rows="4" required placeholder="Jelaskan keluhan Anda secara detail..."></textarea>
-            </div>
-            <div class="form-group">
-              <label>Rating Pengalaman</label>
-              <select id="complaintRating" required>
-                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
-                <option value="4">⭐⭐⭐⭐ (4)</option>
-                <option value="3">⭐⭐⭐ (3)</option>
-                <option value="2">⭐⭐ (2)</option>
-                <option value="1">⭐ (1)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Upload Foto Bukti</label>
-              <input type="file" id="complaintPhoto" accept="image/*">
-            </div>
-            <button type="submit" class="btn-primary">Kirim Keluhan</button>
-          </form>
-        </div>
-        <div class="complaints-list-card">
-          <h3>Keluhan Saya</h3>
-          <div id="complaintsList" class="complaints-list">
-            <!-- Complaints will be populated by JavaScript -->
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <script src="role-auth.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
