@@ -18,7 +18,7 @@ class RAGPipeline:
         self.embed = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         self.llm = ChatOpenAI(
             openai_api_key=os.getenv("OPENAI_API_KEY"),
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             temperature=0
         )
 

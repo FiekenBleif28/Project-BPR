@@ -475,8 +475,14 @@ if (closeComplaintSuccessBtn) {
     var successModal = document.getElementById('successModal');
     if (complaintSuccessModal) complaintSuccessModal.style.display = 'none';
     if (successModal) successModal.style.display = 'none';
+
+    // 🔥 AUTO RELOAD
+    setTimeout(() => {
+      window.location.reload();
+    }, 300); // delay biar animasi tertutup dulu
   });
 }
+
 
 // Feedback
 var submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
@@ -895,5 +901,6 @@ if (document.readyState === 'loading') {
 } else {
   initializeLaundrySystem();
 }
+
 
 
