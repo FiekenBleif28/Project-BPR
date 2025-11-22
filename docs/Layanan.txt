@@ -4,7 +4,7 @@ NAMA LAUNDRY: RnB
 DAFTAR HARGA LAYANAN LAUNDRY 
 - Cuci Komplit (Cuci, Kering, Setrika)
 
-Layanan Reguler 3 Hari (Minimal 5kg)
+Layanan Reguler 3 Hari
 - Lipat: 5000/kg
 - Setrika: 7000/kg
 
@@ -32,7 +32,7 @@ Sprei (Express)
 Sprei (Kilat)
 - Ukuran (120 - 160): 25000/pcs
 
-Baby Laundry (Minimal 3kg, by Sleek Baby & Detol)
+Baby Laundry (by Sleek Baby & Detol)
 - Harga: 20000/kg
 
 Cuci Baby Stroller

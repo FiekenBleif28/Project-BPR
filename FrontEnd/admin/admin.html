@@ -2,23 +2,119 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
     <style>
-        .item { 
-            background: #fff; 
-            padding: 10px; 
-            margin-bottom: 10px; 
-            border-left: 5px solid #007bff; 
-        }
+        /* Minimal styling modal & table */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+        .modal-box { background:#fff; padding:20px; border-radius:10px; width:90%; max-width:500px; }
+        table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+        th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+        .btn { padding:5px 10px; margin:2px; cursor:pointer; border:none; border-radius:5px; }
+        .btn-close { background:#aaa; color:#fff; }
+        .btn-danger { background:#e74c3c; color:#fff; }
+        .navbar { display:flex; justify-content:space-between; padding:10px; background:#3498db; color:white; }
+        .logout-btn { background:#e74c3c; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:5px; }
     </style>
 </head>
 <body>
-    <h1>Daftar Orders</h1>
-    <div id="ordersList">Loading...</div>
 
-    <h1>Daftar Complaints</h1>
-    <div id="complaintsList">Loading...</div>
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <div class="navbar-title">Admin Dashboard</div>
+        <button id="logoutBtn" class="logout-btn">Keluar</button>
+    </div>
 
+    <!-- DAFTAR ORDER -->
+    <h2>DAFTAR ORDER</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Layanan</th>
+                <th>Status Bayar</th>
+                <th>Jumlah</th>
+                <th>Berat</th>
+                <th>Alamat</th>
+                <th>Catatan</th>
+                <th>No HP</th>
+                <th>Metode Pembayaran</th>
+                <th>VA / Bank / QRIS</th>
+                <th>Total</th>
+                <th>Aksi</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="ordersTable"></tbody>
+    </table>
+
+    <!-- DAFTAR KOMPLAIN -->
+    <h2>DAFTAR KOMPLAIN</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Ticket</th>
+                <th>Order ID</th>
+                <th>Kategori</th>
+                <th>Deskripsi</th>
+                <th>Foto</th>
+                <th>Status</th>
+                <th>Rating</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="complaintsTable"></tbody>
+    </table>
+
+    <!-- MODAL UPDATE ORDER -->
+    <div class="modal" id="orderModal">
+        <div class="modal-box">
+            <h3>Update Status Order</h3>
+            <p>ID Order: <span id="modalOrderId"></span></p>
+
+            <label>Status:</label>
+            <select id="modalStatus">
+                <option>Menunggu Diproses</option>
+                <option>Sedang Dikerjakan</option>
+                <option>Selesai</option>
+                <option>Diantar</option>
+                <option>Selesai & diterima</option>
+            </select>
+
+            <br><br>
+            <button class="btn" onclick="saveOrderStatus()">Simpan</button>
+            <button class="btn btn-close" onclick="closeOrderModal()">Tutup</button>
+        </div>
+    </div>
+
+    <!-- MODAL BALAS KOMPLAIN -->
+    <div class="modal" id="complaintModal">
+        <div class="modal-box">
+            <h3>Balas Komplain</h3>
+            <p>Ticket: <span id="modalTicketId"></span></p>
+
+            <textarea id="modalBalasan" placeholder="Tulis balasan..." style="width:100%; height:80px;"></textarea>
+
+            <br><br>
+            <button class="btn" onclick="saveComplaintReply()">Kirim</button>
+            <button class="btn btn-close" onclick="closeComplaintModal()">Tutup</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
     <script src="admin.js"></script>
+    <script>
+        // LOGOUT BUTTON
+        document.addEventListener("DOMContentLoaded", () => {
+            const logoutBtn = document.getElementById("logoutBtn");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", () => {
+                    window.location.href = "http://127.0.0.1:8081/landing.html";
+                });
+            }
+        });
+    </script>
 </body>
 </html>
