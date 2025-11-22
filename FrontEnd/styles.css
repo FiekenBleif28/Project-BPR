@@ -212,6 +212,7 @@ body {
   padding: 4rem 0 6rem;
   position: relative;
   overflow: hidden;
+  text-align: center;
 }
 
 .hero::before {
@@ -896,6 +897,30 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
 }
+
+.nav-logout {
+  background-color: #dc3545; /* merah */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.nav-logout:hover {
+  background-color: #c82333;
+}
+
+/* agar responsive juga tetap bagus */
+@media (max-width: 768px) {
+  .nav-logout {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 
 @media (max-width: 768px) {
   .nav-menu {
