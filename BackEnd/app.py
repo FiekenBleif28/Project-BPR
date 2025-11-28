@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-
+from openai import OpenAI  # Agent
 from rag_pipeline import RAGPipeline
 
 app = FastAPI()
@@ -37,8 +37,11 @@ ALLOWED_ORDER_STATUSES = [
     "Selesai & diterima",
 ]
 
-# === Inisiasi RAG sekali saja ===
+# === RAG ===
 rag = RAGPipeline()
+
+# === OpenAI client ===
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Harga layanan
 PRICE_MAP = {
@@ -69,7 +72,6 @@ def load_db():
     ensure_db_file()
     with open(DB_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
-    # Migrasi dari format lama
     if isinstance(data, list):
         data = {"orders": data}
     for key in DEFAULT_DB.keys():
@@ -89,13 +91,13 @@ def generate_id(prefix: str) -> str:
 class OrderStatusUpdate(BaseModel):
     status: str
 
-# ================= ORDERS =================
+# ================= ORDER ENDPOINT MANUAL =================
 @app.post("/order")
 async def create_order(request: Request):
     try:
         body = await request.json()
         data = load_db()
-        # Validasi minimal
+
         if not body.get("nama"):
             raise HTTPException(status_code=400, detail="Nama pelanggan wajib diisi")
         if not body.get("layanan"):
@@ -149,6 +151,7 @@ async def create_order(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/orders")
 async def list_orders():
     data = load_db()
@@ -177,21 +180,93 @@ async def update_order_status(order_id: str, payload: OrderStatusUpdate):
     save_db(data)
     return {"success": True, "order": order}
 
-# ================= CHATBOT =================
+# ================= AGENT ORDER CREATION =================
+def create_order_for_agent(payload: dict):
+    data = load_db()
+
+    order_id = generate_id("ORD")
+    layanan = payload.get("layanan")
+    jumlah = float(payload.get("jumlah", 1))
+    price = PRICE_MAP.get(layanan, 0)
+    total = price * jumlah
+
+    order_record = {
+        "id": order_id,
+        "userName": payload.get("nama", ""),
+        "layanan": layanan,
+        "jumlah": jumlah,
+        "berat": payload.get("berat", 0),
+        "alamat": payload.get("alamat", ""),
+        "phone": payload.get("phone", ""),
+        "status": "Menunggu Diproses",
+        "tracking_step": "Menunggu Diproses",
+        "total": total,
+        "tanggal": datetime.utcnow().isoformat(),
+        "waktu": datetime.utcnow().isoformat(),
+        "metodePembayaran": payload.get("metodePembayaran", "belum dipilih"),
+    }
+
+    data["orders"].append(order_record)
+    save_db(data)
+    return order_record
+
+# ================= CHATBOT WITH AGENT =================
 @app.post("/chat")
 async def chat(req: Request):
     body = await req.json()
     user_query = body.get("message", "")
+
     if not user_query:
         return {"reply": "Mohon tuliskan pertanyaan Anda."}
-    try:
-        response = rag.generate_answer(user_query)
-        return {"reply": response["answer"]}
-    except Exception as e:
-        print("❌ Error RAG:", e)
-        return {"reply": "Terjadi kesalahan saat memproses pertanyaan Anda."}
 
-# ================= COMPLAINTS =================
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "create_order_for_agent",
+                "description": "Buat pesanan laundry berdasarkan detail dari pelanggan",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "nama": {"type": "string"},
+                        "layanan": {"type": "string"},
+                        "jumlah": {"type": "number"},
+                        "alamat": {"type": "string"},
+                        "phone": {"type": "string"},
+                        "metodePembayaran": {"type": "string"},
+                    },
+                    "required": ["nama", "layanan", "jumlah"]
+                }
+            }
+        }
+    ]
+
+    intent = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system",
+             "content": "Jika pelanggan ingin membuat pesanan, siapkan argumen untuk memanggil fungsi create_order_for_agent. Jika hanya bertanya, jawab biasa."},
+            {"role": "user", "content": user_query}
+        ],
+        tools=tools,
+        tool_choice="auto"
+    )
+
+    msg = intent.choices[0].message
+
+    if msg.tool_calls:
+        call = msg.tool_calls[0]
+        args = json.loads(call.function.arguments)
+        order = create_order_for_agent(args)
+        return {
+            "reply": f"Pesanan berhasil dibuat! ID Pesanan: {order['id']}. Terima kasih telah menggunakan layanan laundry kami.",
+            "order": order
+        }
+
+    rag_answer = rag.generate_answer(user_query)
+    return {"reply": rag_answer["answer"]}
+
+# ============== COMPLAINT SYSTEM ==============
 @app.post("/complaints/create")
 async def create_complaint(
     orderId: str = Form(...),
@@ -229,7 +304,8 @@ async def create_complaint(
     }
     data["complaints"].append(complaint)
     save_db(data)
-    return {"success": True, "ticketId": ticket_id, "complaint": complaint}
+    return {"success": True, "ticketId": ticket_id, "complaint": complaint};
+
 
 @app.get("/complaints")
 async def list_complaints():
@@ -249,32 +325,28 @@ async def reply_complaint(ticket_id: str, payload: dict):
     save_db(data)
     return {"success": True, "complaint": complaint}
 
-# ====================== DELETE ORDERS ======================
+# DELETE
 @app.delete("/orders/{order_id}")
 async def delete_order(order_id: str):
     data = load_db()
     order_index = next((i for i, o in enumerate(data["orders"]) if o["id"] == order_id), None)
     if order_index is None:
         raise HTTPException(status_code=404, detail="Pesanan tidak ditemukan")
-    deleted_order = data["orders"].pop(order_index)
+    deleted = data["orders"].pop(order_index)
     save_db(data)
-    return {"success": True, "deleted_order": deleted_order}
+    return {"success": True, "deleted_order": deleted}
 
-# ====================== DELETE COMPLAINTS ======================
 @app.delete("/complaints/{ticket_id}")
 async def delete_complaint(ticket_id: str):
     data = load_db()
-    complaint_index = next((i for i, c in enumerate(data["complaints"]) if c["ticketId"] == ticket_id), None)
-    if complaint_index is None:
+    idx = next((i for i, c in enumerate(data["complaints"]) if c["ticketId"] == ticket_id), None)
+    if idx is None:
         raise HTTPException(status_code=404, detail="Complaint tidak ditemukan")
-    deleted_complaint = data["complaints"].pop(complaint_index)
+    deleted = data["complaints"].pop(idx)
     save_db(data)
-    return {"success": True, "deleted_complaint": deleted_complaint}
+    return {"success": True, "deleted_complaint": deleted}
 
-
-# ================= STATIC FILES =================
+# STATIC FILES
 uploads_dir = BASE_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-
-
